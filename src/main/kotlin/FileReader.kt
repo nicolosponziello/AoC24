@@ -15,7 +15,9 @@ class FileReader {
 
         fun readContent(fileName: String): String {
             val inputStream = File("${folder}/${fileName}").inputStream()
-            return inputStream.bufferedReader().readLine()
+            var content = ""
+            inputStream.bufferedReader().readLines().forEach{ content += it }
+            return content
         }
     }
 
