@@ -1,12 +1,11 @@
 fun main(){
     val allowedLetters = listOf("X", "M", "A", "S")
-    var fileLines = FileReader.readContentAsListOfLines("day4.txt")
+    val fileLines = FileReader.readContentAsListOfLines("day4.txt")
 
     //filter the letters not allowed
     val regex = Regex("[^xmas]")
-    var countPartOne = partOne(fileLines)
-    println("Part one: $countPartOne")
-
+    println("Part one: ${partOne(fileLines)}")
+    
     println("Part two: ${partTwo(fileLines)}")
 }
 
@@ -35,7 +34,35 @@ fun partOne(lines: List<String>): Int {
 }
 
 fun partTwo(lines: List<String>): Int {
-    return 0
+    var count = 0
+    for (row in 1..<lines.count()-1){
+        val line = lines[row]
+        for (col in 1..<line.length-1){
+            if (!checkMas(lines, row, col)){
+                continue
+            }
+            count++
+        }
+    }
+
+    return count
+}
+
+fun checkMas(lines: List<String>, row: Int, col: Int): Boolean {
+    //check if the diagonal centered in [row, col] is MAS or SAM
+    if (lines[row][col] != 'A'){
+        return false
+    }
+
+    var diag1 = "${lines[row-1][col-1]}${lines[row][col]}${lines[row+1][col+1]}"
+    if (diag1 != "SAM" && diag1 != "MAS"){
+        return false
+    }
+    var diag2 = "${lines[row-1][col+1]}${lines[row][col]}${lines[row+1][col-1]}"
+    if (diag2 != "SAM" && diag2 != "MAS"){
+        return false
+    }
+    return true
 }
 
 fun checkXmas(lines: List<String>, dir: Direction, row: Int, col: Int): Boolean {
