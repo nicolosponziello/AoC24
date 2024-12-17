@@ -33,7 +33,7 @@ private fun partOne(lines: List<String>): Int {
     return count
 }
 
-fun partTwo(lines: List<String>): Int {
+private fun partTwo(lines: List<String>): Int {
     var count = 0
     for (row in 1..<lines.count()-1){
         val line = lines[row]

@@ -33,7 +33,8 @@ fun main(){
     println("Valid updates: ${partOne(lines)}")
 
     //part 2
-    
+    println("Test partTwo: ${partTwo(testInput)}, expected: 123")
+    println("Incorrect updates corrected: ${partTwo(lines)}")
 }
 
 private fun partOne(input: List<String>): Int {
@@ -53,7 +54,62 @@ private fun partOne(input: List<String>): Int {
     return checkUpdates(updates, rules)
 }
 
-fun checkUpdates(updates: List<List<Int>>, rules: List<Rule>): Int{
+private fun partTwo(input: List<String>): Int {
+    val rules = mutableListOf<Rule>()
+    val updates = mutableListOf<List<Int>>()
+
+    for (line in input){
+        if (line.contains("|")){
+            rules.add(parseRule(line))
+        }else {
+            if (line.isBlank()) {
+                continue
+            }
+            updates.add(parseUpdate(line))
+        }
+    }
+
+    var partTwoSum = 0
+    for (update in updates) {
+        if (!isValidUpdate(update, rules)){
+            val reorderedUpdate = reorderUpdate(update, rules)
+            partTwoSum += reorderedUpdate.elementAt(reorderedUpdate.count() / 2)
+        }
+    }
+
+    return partTwoSum
+}
+
+private fun reorderUpdate(update: List<Int>, rules: List<Rule>): List<Int> {
+    val mutableUpdate = mutableListOf<Int>()
+    mutableUpdate.addAll(update)
+
+    for (rule in rules) {
+        if (isRuleCorrect(mutableUpdate, rule)) {
+            continue
+        }
+
+        //swap two elements
+        val indexBefore = mutableUpdate.indexOf(rule.before)
+        val indexAfter = mutableUpdate.indexOf(rule.after)
+        if (indexBefore == -1 || indexAfter == -1) {
+            continue
+        }
+
+        val temp = mutableUpdate[indexBefore]
+        mutableUpdate[indexBefore] = mutableUpdate[indexAfter]
+        mutableUpdate[indexAfter] = temp
+    }
+
+    //recursive call to ensure the update is reordered correctly
+    if (!isValidUpdate(mutableUpdate, rules)){
+        return reorderUpdate(mutableUpdate, rules)
+    }
+
+    return mutableUpdate.toList()
+}
+
+private fun checkUpdates(updates: List<List<Int>>, rules: List<Rule>): Int{
     var validUpdates = mutableListOf<List<Int>>()
     for (update in updates) {
         if (isValidUpdate(update, rules)){
@@ -71,30 +127,35 @@ fun checkUpdates(updates: List<List<Int>>, rules: List<Rule>): Int{
 }
 
 
+private fun isRuleCorrect(update: List<Int>, rule: Rule): Boolean {
+    //check if index of before is less than index after
+    var indexBefore = update.indexOf(rule.before)
+    var indexAfter = update.indexOf(rule.after)
+    if (indexBefore == -1 || indexAfter == -1) {
+        //we return true, so we skip this rule
+        return true
+    }
 
+    return indexBefore < indexAfter;
+}
 
-fun isValidUpdate(update: List<Int>, rules: List<Rule>): Boolean {
+private fun isValidUpdate(update: List<Int>, rules: List<Rule>): Boolean {
     for (rule in rules) {
-        //check if index of before is less than index after
-        var indexBefore = update.indexOf(rule.before)
-        var indexAfter = update.indexOf(rule.after)
-        if (indexBefore == -1 || indexAfter == -1) {
-            continue
-        }
-
-        if (indexBefore > indexAfter) {
-            return false
-        }
+       if (isRuleCorrect(update, rule)){
+           continue
+       } else {
+           return false
+       }
     }
     return true
 }
 
-fun parseRule(value: String): Rule{
+private fun parseRule(value: String): Rule{
     val numbers = value.split("|")
     return Rule(numbers.first().toInt(), numbers[1].toInt())
 }
 
-fun parseUpdate(value: String): List<Int> {
+private fun parseUpdate(value: String): List<Int> {
     val numbers = value.split(",")
     val filtered = numbers.filter { it != ""}
     val update = mutableListOf<Int>()
