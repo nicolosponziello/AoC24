@@ -9,7 +9,7 @@ fun main(){
     println("Part two: ${partTwo(fileLines)}")
 }
 
-fun partOne(lines: List<String>): Int {
+private fun partOne(lines: List<String>): Int {
     val directions = listOf(
         Direction(1, 0),
         Direction(-1, 0),
