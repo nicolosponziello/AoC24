@@ -22,7 +22,7 @@ class FileReader {
 
         fun readContentAsListOfLines(fileName: String): MutableList<String> {
             val inputStream = File("${folder}/${fileName}").inputStream()
-            var content = mutableListOf<String>()
+            val content = mutableListOf<String>()
             inputStream.bufferedReader().readLines().forEach { content.add(it) }
             return content
         }
