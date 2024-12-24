@@ -3,7 +3,7 @@ import javax.swing.text.Position
 fun main(){
     val input = FileReader.readAllLines("day6.txt")
 
-    val testInput = listOf<String>(
+    val testInput = listOf(
         "....#.....",
         ".........#",
         "..........",
@@ -15,10 +15,8 @@ fun main(){
         "#.........",
         "......#...")
 
-
-    val visitedPositions = mutableListOf<Coordinate>()
-    val visitedPositionsAndDirection = mutableListOf<CoordinateWithDirection>()
-    var matrix = buildMatrix(testInput)
+    val visitedPositions = mutableSetOf<Coordinate>()
+    var matrix = buildMatrix(input)
     printMatrix(matrix)
 
     var guard = findGuardStartPosition(matrix) ?: return
@@ -26,7 +24,7 @@ fun main(){
     visitedPositions.add(guard.position)
     var partOneCount = 0
     while (!isOutsideBounds(guard.position, matrix)) {
-        val moved = moveGuardInDirection(guard, matrix, visitedPositions, visitedPositionsAndDirection)
+        val moved = moveGuardInDirection(guard, matrix, visitedPositions)
         partOneCount += moved
         println("Moved $moved in direction ${guard.direction}, count is $partOneCount")
         guard.turnRight()
@@ -34,28 +32,50 @@ fun main(){
 
     println("Part one: $partOneCount")
 
-    //for part 2, I assume that the obstacles must be placed in a place where the guard will pass/has passed
-    var possibleObstaclesPositions = 0
-    matrix = buildMatrix(testInput)
-    guard = findGuardStartPosition(matrix)!!
+    // PART 2
+    // reset the matrix and the guard position
+    // put obstacle in a position that was visited before => this is the new matrix to search for loops
+    // check for loops
+    //  - there is a loop if the guard comes back to the same position with the same direction
+    //  - if there is a loop then stop the search with the current configuration and increase the loop counter
+    // restart again until all the visited positions have been tested as a candidate for an obstacle
+
+    var loopsFound = 0
+    visitedPositions.remove(visitedPositions.last())
     for (visitedPos in visitedPositions) {
-        if (visitedPos == guard.position) {
+
+        // reset the matrix and guard
+        matrix = buildMatrix(input)
+        guard = findGuardStartPosition(matrix) ?: return
+
+        println("Testing position: ${visitedPositions.indexOf(visitedPos)} / ${visitedPositions.count()} ${visitedPos}")
+
+        // place the obstacle
+        if (!placeObstacleSafe(visitedPos, matrix, guard.position)){
             continue
         }
 
-        //place an obstacle in the visited pos
-        matrix[visitedPos.row][visitedPos.col] = 'X'
-
-        //run the walk, but check if it loops => it ends up in a visited position with the same direction
-        if (checkLoop(guard, matrix, visitedPositionsAndDirection)) {
-            possibleObstaclesPositions++
+        if (checkLoop(guard, matrix)){
+            loopsFound++
         }
-
-        guard = findGuardStartPosition(matrix)!!
-        matrix[visitedPos.row][visitedPos.col] = '.'
     }
 
-    println("Part 2: $possibleObstaclesPositions")
+    println("Part 2: $loopsFound")
+}
+
+private fun placeObstacleSafe(obstaclePos: Coordinate , matrix: List<CharArray>, guardPosition: Coordinate): Boolean{
+    if (obstaclePos.col == guardPosition.col && obstaclePos.row == guardPosition.row) {
+        println("Cannot put obstacle in guard position")
+        return false // cannot place obstacle in guard position
+    }
+
+    if (isOutsideBounds(obstaclePos, matrix)) {
+        println("Obstacle: $obstaclePos is out of bounds (max row index: ${matrix.count()} max col index. ${matrix.first().count()}")
+        return false // out of bounds
+    }
+
+    matrix[obstaclePos.row][obstaclePos.col] = '#'
+    return true
 }
 
 private fun buildMatrix(input: List<String>): MutableList<CharArray> {
@@ -75,53 +95,64 @@ private fun printMatrix(input: MutableList<CharArray>) {
 }
 
 //check for loops
-private fun checkLoop(guard: Guard, matrix: List<CharArray>, visitedAndDirection: MutableList<CoordinateWithDirection>): Boolean {
-    do {
-        val nextPositionX = guard.position.col + guard.direction.x
-        val nextPositionY = guard.position.row + guard.direction.y
-        if (nextPositionY >= matrix.count() || nextPositionX >= matrix.first().size || nextPositionX == -1 || nextPositionY == -1) {
-            guard.position.col += guard.direction.x
-            guard.position.row += guard.direction.y
-            return false
-        }
+// This should check the whole guard path until stuck or outside bounds
+private fun checkLoop(guard: Guard, matrix: List<CharArray>): Boolean {
+    val visitedAndDirection = mutableListOf<CoordinateWithDirection>()
 
-        val cell = matrix[nextPositionY][nextPositionX]
-        if (cell != '#'){
-            var element = CoordinateWithDirection(Coordinate(nextPositionY, nextPositionX), guard.direction)
-            if (visitedAndDirection.contains(element)) {
-                //looped
-                return true
+    //move the guard in the path
+    while (!isOutsideBounds(guard.position, matrix)) {
+        do {
+            val nextPositionCol = guard.position.col + guard.direction.x
+            val nextPositionRow = guard.position.row + guard.direction.y
+            val nextGuardPosition = Coordinate(nextPositionRow, nextPositionCol)
+            if (isOutsideBounds(nextGuardPosition, matrix)) {
+                guard.position = nextGuardPosition
+
+                //guard escaped, no loop
+                return false
             }
-            visitedAndDirection.add(element)
 
-            guard.position.col += guard.direction.x
-            guard.position.row += guard.direction.y
-        }
+            val cell = matrix[nextPositionRow][nextPositionCol]
+            if (cell != '#'){
+                if (!isOutsideBounds(nextGuardPosition, matrix)) {
+                    val coordAndDir = CoordinateWithDirection(nextGuardPosition, guard.direction)
+                    if (visitedAndDirection.contains(coordAndDir)) {
+                        //we alredy been here with the current direction, we looped!
+                        return true
+                    }
 
-    } while (cell != '#' )
-    guard.turnRight()
-    return checkLoop(guard, matrix, visitedAndDirection)
+                    matrix[nextPositionRow][nextPositionCol] = 'X'
+                    visitedAndDirection.add(coordAndDir)
+                }
+                guard.position.col += guard.direction.x
+                guard.position.row += guard.direction.y
+            }
+        } while (cell != '#' )
+
+        guard.turnRight()
+    }
+
+    return false
 }
 
 
 //returns the number of spots travelled
-private fun moveGuardInDirection(guard: Guard, matrix: MutableList<CharArray>, visited: MutableList<Coordinate>, visitedAndDirection: MutableList<CoordinateWithDirection>): Int {
+private fun moveGuardInDirection(guard: Guard, matrix: MutableList<CharArray>, visited: MutableSet<Coordinate>): Int {
     var count = 0
     do {
-        val nextPositionX = guard.position.col + guard.direction.x
-        val nextPositionY = guard.position.row + guard.direction.y
-        if (isOutsideBounds(Coordinate(nextPositionY, nextPositionX), matrix)) {
-            guard.position.col += guard.direction.x
-            guard.position.row += guard.direction.y
+        val nextPositionCol = guard.position.col + guard.direction.x
+        val nextPositionRow = guard.position.row + guard.direction.y
+        val nextGuardPosition = Coordinate(nextPositionRow, nextPositionCol)
+        if (isOutsideBounds(nextGuardPosition, matrix)) {
+            guard.position = nextGuardPosition
             break;
         }
-        val cell = matrix[nextPositionY][nextPositionX]
+        val cell = matrix[nextPositionRow][nextPositionCol]
         if (cell != '#'){
-            if (!visited.contains(Coordinate(nextPositionY, nextPositionX)) && !isOutsideBounds(Coordinate(nextPositionY, nextPositionX), matrix)) {
+            if (!isOutsideBounds(nextGuardPosition, matrix) && !visited.contains(nextGuardPosition)) {
                 count++
-                matrix[nextPositionY][nextPositionX] = 'X'
-                visited.add(Coordinate(nextPositionY, nextPositionX))
-                visitedAndDirection.add(CoordinateWithDirection(Coordinate(nextPositionY, nextPositionX), guard.direction))
+                matrix[nextPositionRow][nextPositionCol] = 'X'
+                visited.add(nextGuardPosition)
             }
             guard.position.col += guard.direction.x
             guard.position.row += guard.direction.y
@@ -160,7 +191,15 @@ private fun findGuardStartPosition(matrix: List<CharArray>): Guard? {
 data class CoordinateWithDirection(val coordinate: Coordinate, val direction: Direction)
 
 //x -> column, y -> row in a matrix
-data class Coordinate(var row: Int, var col: Int)
+data class Coordinate(var row: Int, var col: Int) {
+    override fun equals(other: Any?): Boolean {
+        if (other !is Coordinate) {
+            return false
+        }
+
+        return row == other.row && col == other.col
+    }
+}
 
 data class Guard(var position: Coordinate, var direction: Direction){
     fun isRight(): Boolean {
