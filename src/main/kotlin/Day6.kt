@@ -78,22 +78,6 @@ private fun placeObstacleSafe(obstaclePos: Coordinate , matrix: List<CharArray>,
     return true
 }
 
-private fun buildMatrix(input: List<String>): MutableList<CharArray> {
-    val result = mutableListOf<CharArray>()
-    for (line in input) {
-        result.add(line.toCharArray())
-    }
-    return result
-}
-
-private fun printMatrix(input: MutableList<CharArray>) {
-    println("**------**\n")
-    for (line in input) {
-        println(line)
-    }
-    println("\n**------**\n")
-}
-
 //check for loops
 // This should check the whole guard path until stuck or outside bounds
 private fun checkLoop(guard: Guard, matrix: List<CharArray>): Boolean {
@@ -161,10 +145,6 @@ private fun moveGuardInDirection(guard: Guard, matrix: MutableList<CharArray>, v
     } while (cell != '#' )
     printMatrix(matrix)
     return count
-}
-
-private fun isOutsideBounds(position: Coordinate, matrix: List<CharArray>): Boolean {
-    return position.col >= matrix[0].size || position.row >= matrix.count() || position.col < 0 || position.row < 0
 }
 
 private fun findGuardStartPosition(matrix: List<CharArray>): Guard? {
