@@ -7,18 +7,30 @@ fun main() {
 
     var partOneSum = 0L
     for (equation in equations) {
-        if (solve(equation)) {
+        if (solve(equation, equation.inputs.first().toLong(), 1, false)) {
             partOneSum += equation.testValue
         }
     }
 
     println("Part one sum: $partOneSum")
+
+    var partTwoSum = 0L
+    for (equation in equations) {
+        if (solve(equation, equation.inputs.first().toLong(), 1, true)) {
+            partTwoSum += equation.testValue
+        }
+    }
+
+    println("Part two sum: $partTwoSum")
+
 }
 
 
-private fun solve(equation: Equation, current: Long = equation.inputs.first().toLong(), index: Int = 1): Boolean {
+private fun solve(equation: Equation, current: Long = equation.inputs.first().toLong(), index: Int = 1, partTwo: Boolean): Boolean {
     if (index == equation.inputs.count()) return current == equation.testValue
-    return solve(equation, current + equation.inputs[index], index + 1) || solve(equation, current * equation.inputs[index], index + 1)
+    return solve(equation, current + equation.inputs[index], index + 1, partTwo) ||
+           solve(equation, current * equation.inputs[index], index + 1, partTwo) ||
+           (partTwo && solve(equation, "${current.toString()}${equation.inputs[index]}".toLong(), index + 1, partTwo))
 }
 
 // an equation is a list of int
