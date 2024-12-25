@@ -6,6 +6,9 @@ fun main() {
 
     val countPartOne = countAntinodes(matrix)
     println("Part one: $countPartOne")
+
+    val countPartTwo = countAntinodesExtended(matrix)
+    println("Part two: $countPartTwo")
 }
 
 // Count all the unique antinodes:
@@ -34,6 +37,46 @@ private fun countAntinodes(matrix: MutableList<CharArray>): Int {
         }
     }
     return antinodes.count()
+}
+
+private fun countAntinodesExtended(matrix: MutableList<CharArray>): Int {
+    val antinodes = mutableSetOf<Coordinate>()
+    val antennasMap = buildAntennasMap(matrix)
+
+    //for each antenna type, calculate if there is a pair of coordinates that can generate an antidote
+    for (entry in antennasMap) {
+        if (entry.value.count() < 2) {
+            //cannot generate antinodes with only one antenna
+            continue
+        }
+
+        //generate all the combinations
+        val towerCombinations = generateCombinations(entry.value)
+
+        for (combination in towerCombinations) {
+            //calculate vector between the two antennas
+            val vect = combination.second - combination.first
+
+            //extend from first antenna and then from the second
+            antinodes.addAll(extendFrom(combination.first, vect, matrix, true))
+            antinodes.addAll(extendFrom(combination.second, vect, matrix, false))
+        }
+    }
+    return antinodes.count()
+}
+
+//calculate antinodes in the dir direction while in the matrix
+private fun extendFrom(pos: Coordinate, dir: Coordinate, matrix: MutableList<CharArray>, sum: Boolean): Set<Coordinate> {
+    val coordinates = mutableSetOf<Coordinate>()
+    var currentPos = pos
+    while (true) {
+        val nextAntinode = if (sum) currentPos + dir else currentPos - dir
+        if (isOutsideBounds(nextAntinode, matrix)) {
+            return coordinates
+        }
+        coordinates.add(nextAntinode)
+        currentPos = nextAntinode
+    }
 }
 
 private fun buildAntennasMap(matrix: MutableList<CharArray>): Map<Char, List<Coordinate>> {
