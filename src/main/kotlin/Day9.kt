@@ -7,6 +7,7 @@ fun main() {
 
     //part two
     testPartTwo()
+    println("Part two: ${partTwo(line)}")
 }
 
 private fun partOne(input: String): Long {
@@ -31,30 +32,37 @@ private fun reorderInBlocks(blocks: List<Int>): List<Int> {
     var p1 = 0
     var p2 = input.lastIndex
     while (p2 > 0){
-        if (input[p1] != -1){
-            p1++
-            continue
-        }
+        //search for empty block on the left that can fit the file
         if (input[p2] == -1) {
             p2--
             continue
         }
 
-        var emptySpaceSize = calculateSize(input, p1)
-        var fileSize = calculateSize(input, p2, true)
-        if (fileSize > emptySpaceSize) {
-            p1 = 0
-            p2 -= fileSize
-            continue
-        }
-
-        val secondValue = input[p2]
-        val firstValue = input[p1]
-
-        copySize(input, p1, fileSize, secondValue)
-        copySize(input, p2, fileSize, firstValue, true)
+        val fileSize = calculateSize(input, p2, backwards = true)
         p1 = 0
-        p2 -= fileSize
+        //try to find an empty space
+        while(p1 < p2) {
+            if (input[p1] != -1){
+                p1++
+                continue
+            }
+
+            //calculate empty space
+            val emptySize = calculateSize(input, p1)
+            if (fileSize > emptySize) {
+                p1 += emptySize
+                continue
+            }
+            val valueToCopy = input[p2]
+            copySize(input, p1, fileSize, valueToCopy)
+            copySize(input, p2, fileSize, -1, true)
+            p2 -= fileSize
+            break
+        }
+        //if we end up here we could not find an empty block for the file
+        if (p1 >= p2) {
+            p2 -= fileSize
+        }
     }
 
     return input
