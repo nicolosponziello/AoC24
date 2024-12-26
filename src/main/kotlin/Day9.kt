@@ -6,73 +6,66 @@ fun main() {
     println("Part one: ${partOne(line)}")
 }
 
-private fun partOne(input: String): Int {
+private fun partOne(input: String): Long {
     val newString = parseInput(input)
-    println(newString)
     val reordered = reorder(newString)
     return calculateHash(reordered)
 }
 
-private fun calculateHash(input: List<String>): Int {
-    var count = 0
+private fun calculateHash(input: List<Int>): Long {
+    var count = 0L
     for (i in input.indices) {
-        if (input[i] == ".") {
-            return count
+        if (input[i] == -1) {
+            continue
         }
 
-        count += input[i].toInt() * i
+        count += input[i] * i
     }
 
     return count
 }
 
-private fun reorder(input: String): List<String> {
+private fun reorder(input: MutableList<Int>): List<Int> {
     val mutableInput = input.toMutableList()
-    for (i in 0..<input.length) {
-        if (input[i] != '.') {
-            mutableInput.set(i, mutableInput[i])
-        } else {
-            //find the left most value that can be moved to the empty block in pos i
-            val j = findRightMostIndex(mutableInput.joinToString(separator = "."))
-            //set char at j in i and . in j
-            if (j <= i){
-                break
-            }
-            mutableInput.set(i, input[j])
-            mutableInput.set(j, '.')
+    var p1 = 0
+    var p2 = input.lastIndex
+    while (p1 < p2) {
+        if (input[p1] != -1) {
+            p1++
+            continue
         }
+        if (input[p2] == -1) {
+            p2--
+            continue
+        }
+        mutableInput[p1] = input[p2]
+        mutableInput[p2] = -1
+        p1++
+        p2--
     }
     return mutableInput.toList()
 }
 
-private fun findRightMostIndex(input: String): Int {
-    var index = input.length - 1
-    while (index >= 0 && input[index] == '.'){
-        index--
-    }
-    return index
-}
-
-private fun parseInput(input: String): String {
+private fun parseInput(input: String): MutableList<Int> {
     //0 - 2 ... => files
     //1 - 3 ... => empty blocks
-    val parsed = mutableListOf<String>()
+    val parsed = mutableListOf<Int>()
     var fileId = 0
     for (idx in 0..<input.length) {
         if (idx % 2 == 0) {
             //is file
             repeat(input[idx].digitToInt()) {
-                parsed.add(fileId.toString())
+                parsed.add(fileId)
             }
             fileId++
         } else {
             //is empty
             repeat(input[idx].digitToInt()) {
-                parsed.add(".")
+                parsed.add(-1)
             }
         }
     }
-    return parsed.joinToString(separator = "")
+    return parsed
 }
 
 private fun test() {
