@@ -1,47 +1,47 @@
+import kotlin.time.Duration.Companion.seconds
+
 fun main() {
     val input = FileReader.readAllLines("day10.txt")
     val matrix = buildMatrixAsIntArrays(input)
 
     testOne()
-    println("Part one ${partOne(matrix)}")
+    println("Part one ${partOne(matrix).first}")
+    println("Part two ${partOne(matrix).second}")
 }
 
-private fun partOne(matrix: List<List<Int>>): Int {
+private fun partOne(matrix: List<List<Int>>): Pair<Int, Int> {
     var totalScore = 0
+    var totalRating = 0
     val startingCoordinates = findZeroes(matrix)
     for (startingPos in startingCoordinates) {
-        val score = calculateScoreStartingIn(startingPos, matrix)
-        totalScore += score
+        val result = calculateScoreStartingIn(startingPos, matrix)
+        totalScore += result.first
+        totalRating += result.second
     }
-    return totalScore
+    return Pair(totalScore, totalRating)
 }
 
-private fun calculateScoreStartingIn(starting: Coordinate, matrix: List<List<Int>>): Int {
-    var score = 0
-    val visited = mutableListOf<Coordinate>()
-    val stack = java.util.ArrayDeque<Coordinate>()
-    //push starting and its neighbours
-    stack.push(starting)
-    while (!stack.isEmpty()) {
-        val current = stack.pop()
-        // if the node from the stack is the end of the trail, increment the score
-        if (matrix[current.row][current.col] == 9) {
-            score++
-            visited.add(current)
-            continue
-        }
+private fun calculateScoreStartingIn(starting: Coordinate, matrix: List<List<Int>>): Pair<Int, Int> {
+    val ends = HashSet<Coordinate>()
+    var trailCount = 0
 
-        //otherwise, get its neighbours in the stack and continue
-        getNeighbours(current, matrix).forEach {
-            if (visited.contains(it) == false) {
-                stack.push(it)
+    fun dfs(node: Coordinate) {
+        //if we ended up on a terminal node, keep track of it and increase
+        //the trail count from the root
+        if (matrix[node.row][node.col] == 9) {
+            ends += node
+            trailCount++
+        } else {
+            //otherwise, let's proceed the exploration
+            getNeighbours(node, matrix).forEach {
+                dfs(it)
             }
         }
-        visited.add(current)
     }
 
+    dfs(starting)
 
-    return score
+    return Pair(ends.size, trailCount)
 }
 
 private fun getNeighbours(pos: Coordinate, matrix: List<List<Int>>): List<Coordinate> {
@@ -83,12 +83,15 @@ private fun testOne() {
                        "32019012",
                        "01329801",
                        "10456732")
-    var count = 0
+    var score = 0
+    var rating = 0
     val matrix = buildMatrixAsIntArrays(input)
     val startingCoordinates = findZeroes(matrix)
     println("Starting pos: ${startingCoordinates.count()}")
     for (startingPos in startingCoordinates) {
-        count += calculateScoreStartingIn(startingPos, matrix)
+        val res = calculateScoreStartingIn(startingPos, matrix)
+        score += res.first
+        rating += res.second
     }
-    println("Test: $count (expected 36)")
+    println("Test: $score (expected 36), $rating (expected 81)")
 }
