@@ -1,40 +1,23 @@
 import kotlin.time.measureTime
 
+private val zones = mutableListOf<List<Coordinate>>()
+
 fun main() {
     val input = FileReader.readAllLines("day12.txt")
     val matrix = buildMatrix(input)
-
-    testOne()
 
     var partOneResult = 0
     val timePartOne = measureTime {
         partOneResult = partOne(matrix)
     }
     println("Part one: $partOneResult (${timePartOne.inWholeMilliseconds}ms)")
-}
 
-private fun testOne() {
-    val alreadyAttributed = mutableListOf<Coordinate>()
-
-    val input = listOf("AAAA",
-                      "BBCD",
-                      "BBCC",
-                      "EEEC")
-    val matrix = buildMatrix(input)
-    var value = 0
-    for (row in 0..<matrix.count()) {
-        for (col in 0..<matrix.first().count()) {
-            if (alreadyAttributed.contains(Coordinate(row, col))) {
-                continue
-            }
-            val zone = discoverZoneFrom(Coordinate(row, col), matrix)
-            alreadyAttributed.addAll(zone)
-            val area = zone.count()
-            val perimeter = calculatePerimeter(zone, matrix)
-            println("Zone: ${matrix[row][col]} - perimeter $perimeter area $area")
-            value += area * perimeter
-        }
+    var partTwoResult = 0
+    val timePartTwo = measureTime {
+        partTwoResult = partTwo(matrix)
     }
+    println("Part two: $partTwoResult (${timePartTwo.inWholeMilliseconds}ms)")
+
 }
 
 private fun partOne(matrix: MutableList<CharArray>) : Int {
@@ -48,11 +31,40 @@ private fun partOne(matrix: MutableList<CharArray>) : Int {
                 continue
             }
             val zone = discoverZoneFrom(Coordinate(row, col), matrix)
+            zones.add(zone)
+
             alreadyAttributed.addAll(zone)
             val area = zone.count()
             val perimeter = calculatePerimeter(zone, matrix)
             value += area * perimeter
         }
+    }
+    return value
+}
+
+private fun partTwo(matrix: List<CharArray>): Int {
+    var value = 0
+    val directions = listOf(Coordinate(1, -1),
+        Coordinate(1, 1),
+        Coordinate(-1, 1),
+        Coordinate(-1, -1))
+    for (zone in zones) {
+        var edges = 0
+        for (node in zone) {
+            directions.forEach {
+                val rowNeighbour = Coordinate(node.row + it.row, node.col)
+                val colNeighbour = Coordinate(node.row, node.col + it.col)
+                val diagNeighbour = Coordinate(node.row + it.row, node.col + it.col)
+                if (!zone.contains(rowNeighbour) && !zone.contains(colNeighbour)) {
+                    edges++
+                }
+
+                if (zone.contains(rowNeighbour) && zone.contains(colNeighbour) && !zone.contains(diagNeighbour)) {
+                    edges++
+                }
+            }
+        }
+        value += zone.count() * edges
     }
     return value
 }
