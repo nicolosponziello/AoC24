@@ -1,63 +1,77 @@
+
+
 fun main() {
     val input = FileReader.readContent("day11.txt")
     val line = parseLine(input)
 
-    testOne()
+    //testOne()
 
     println("Part one: ${partOne(line)}")
     println("Part two: ${partTwo(line)}")
 }
 
-private fun parseLine(input: String): MutableList<Long> {
-    val res = mutableListOf<Long>()
+// usign a map of occurrencies for each stone, as order is not important
+// stone -> occurrencies
+private fun parseLine(input: String): MutableMap<Long, Long> {
+    val res = mutableMapOf<Long, Long>()
     val splitted = input.split(' ')
     for (part in splitted) {
         if (part.isNotEmpty()) {
-            res.add(part.toLong())
+            if (res.containsKey(part.toLong())){
+                res[part.toLong()] = res[part.toLong()]!! + 1
+            } else {
+                res[part.toLong()] = 1
+            }
         }
     }
     return res
 }
 
-//use memoization to improve performance
-private fun partTwo(input: MutableList<Long>): Long {
-    return partOne(input, false, 75)
+private fun partTwo(input: MutableMap<Long, Long>): Long {
+    return partOne(input, 75)
 }
 
-private fun partOne(input: MutableList<Long>, print: Boolean = false, iterations: Int = 25): Long {
+//refactored to use a hash map to store the stones value and the occurrencies
+private fun partOne(input: MutableMap<Long, Long>, iterations: Int = 25): Long {
     var blinked = 0
+    var current = input.toMutableMap()
     while (blinked < iterations) {
-        var i = 0
-        while (i < input.count()) {
-            //rule one
-            if (input[i] == 0L) {
-                input[i] = 1L
-                i++
-                continue
-            }
+        val mutated = mutableMapOf<Long, Long>()
 
-            //rule 2
-            if (input[i].toString().count() % 2 == 0) {
-                val length = input[i].toString().count()
-                val first = input[i].toString().take(length / 2)
-                val second = input[i].toString().drop(first.count()).take(length / 2)
-                input[i] = first.toLong()
-                input.add(i+1, second.toLong())
-                i += 2
-                continue
+        for (pair in current) {
+            val stone = pair.key
+            val occurrencies = pair.value
+            for (new in mutateStone(stone)) {
+                if (mutated.containsKey(new)) {
+                    mutated[new] = mutated[new]!! + occurrencies
+                } else {
+                    mutated[new] = occurrencies
+                }
             }
-
-            //rule 3
-            input[i] = input[i] * 2024
-            i++
         }
-        if (print) println(input)
+        current = mutated
         blinked++
     }
-    return input.size.toLong()
+
+    return current.values.reduce {acc, value -> acc + value}
+}
+
+private fun mutateStone(stone: Long) = sequence<Long> {
+    if (stone == 0L){
+        yield(1L)
+    }
+    else if (stone.toString().count() % 2 == 0) {
+        val length = stone.toString().count()
+        val first = stone.toString().take(length / 2)
+        val second = stone.toString().drop(first.count()).take(length / 2)
+        yield(first.toLong())
+        yield(second.toLong())
+    } else {
+        yield(stone * 2024L)
+    }
 }
 
 private fun testOne() {
-    val input = mutableListOf(125L, 17L)
-    println("Test: ${partOne(input, print = true, iterations = 6)}")
+    val input = mutableMapOf(Pair(125L, 1L), Pair(17L, 1L))
+    println("Test: ${partOne(input, iterations = 6)} (expected: 22)")
 }
